@@ -1,2 +1,2 @@
 # nestjs-lab
-This repository contains my experiments with NestJs stuff, you can use it for learning purpose
+This repository contains my experiments with NestJS. Feel free to explore the code and use it for learning purposes.

@@ -16,12 +16,12 @@ fi
 
 echo "Scaffolding new Nest experiment at $TARGET_DIR..."
 # uses Nest CLI to scaffold a new app; adjust package-manager if needed
-npx -y @nestjs/cli new "$TARGET_DIR" --package-manager pnpm --skip-install
+npx -y @nestjs/cli new "$TARGET_DIR" --skip-git --package-manager pnpm --skip-install
 
 # update package name to a consistent convention
 pkgfile="$TARGET_DIR/package.json"
 tmpfile="$TARGET_DIR/tmp.package.json"
-jq --arg n "experiment-$NAME" '.name = $n' "$pkgfile" > "$tmpfile" && mv "$tmpfile" "$pkgfile"
+jq --arg n "experiment--$NAME" '.name = $n' "$pkgfile" > "$tmpfile" && mv "$tmpfile" "$pkgfile"
 
 # add README
 cat > "$TARGET_DIR/README.md" <<EOF
@@ -29,4 +29,4 @@ cat > "$TARGET_DIR/README.md" <<EOF
 EOF
 
 echo "Done. Run 'pnpm install' from repo root, then start with:"
-echo "pnpm --filter experiment-$NAME start:dev"
+echo "pnpm --filter experiment--$NAME start:dev"

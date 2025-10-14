@@ -5,6 +5,7 @@
     "install:all": "pnpm install",
     "start": "echo \"Use pnpm --filter <pkg> start:dev or npm run start:exp <name>\"",
     "start:exp": "bash ./scripts/run-experiment.sh",
+    "new:exp": "bash ./scripts/new-experiment.sh",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "test": "pnpm -r test"

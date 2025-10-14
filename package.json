@@ -1,0 +1,16 @@
+{
+  "name": "nestjs-experiments",
+  "workspaces": ["experiments/*", "shared/*"],
+  "scripts": {
+    "install:all": "pnpm install",
+    "start": "echo \"Use pnpm --filter <pkg> start:dev or npm run start:exp <name>\"",
+    "start:exp": "bash ./scripts/run-experiment.sh",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^2.0.0"
+  }
+}

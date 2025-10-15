@@ -1,0 +1,21 @@
+{
+  "name": "@experiments/shared",
+  "version": "1.0.0",
+  "description": "Shared utilities, modules, and middlewares for NestJS experiments",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "test": "echo \"No tests yet\""
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@types/express": "^5.0.3",
+    "express": "^5.1.0"
+  }
+}

@@ -1,6 +1,9 @@
 {
   "name": "nestjs-experiments",
-  "workspaces": ["experiments/*", "shared/*"],
+  "workspaces": [
+    "experiments/*",
+    "shared/*"
+  ],
   "scripts": {
     "install:all": "pnpm install",
     "start": "echo \"Use pnpm --filter <pkg> start:dev or npm run start:exp <name>\"",
@@ -13,5 +16,9 @@
   "devDependencies": {
     "eslint": "^8.0.0",
     "prettier": "^2.0.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "express": "^5.1.0"
   }
 }

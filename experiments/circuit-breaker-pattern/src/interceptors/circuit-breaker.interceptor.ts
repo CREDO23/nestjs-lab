@@ -22,6 +22,7 @@ export class CircuitBreakerInterceptor {
     return next.handle().pipe(
       tap({
         next: () => this.handleSuccess(),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         error: (err) => this.handleFailure(err),
       }),
     );

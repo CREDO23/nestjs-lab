@@ -1,5 +1,5 @@
 import { CallHandler } from '@nestjs/common';
-import { tap } from 'rxjs';
+import { tap, throwError } from 'rxjs';
 
 const SUCCESS_THRESHOLD = 3; // the number of successful requests needed to close the circuit
 const FAILURE_THRESHOLD = 3; // the number of failed requests needed to open the circuit
@@ -11,7 +11,7 @@ enum CIRCUIT_BREAKER_STATE {
   HALF_OPEN = 'half-open',
 }
 
-export class CircuitBreakerInterceptor {
+export class CircuitBreaker {
   private state: CIRCUIT_BREAKER_STATE = CIRCUIT_BREAKER_STATE.CLOSED;
   private successCount = 0;
   private failureCount = 0;
@@ -19,6 +19,14 @@ export class CircuitBreakerInterceptor {
   private nextAttempt: number;
 
   exec(next: CallHandler) {
+    if (this.state === CIRCUIT_BREAKER_STATE.OPEN) {
+      if (this.nextAttempt > Date.now()) {
+        return throwError(() => this.lastError);
+      }
+
+      this.state = CIRCUIT_BREAKER_STATE.HALF_OPEN;
+    }
+
     return next.handle().pipe(
       tap({
         next: () => this.handleSuccess(),

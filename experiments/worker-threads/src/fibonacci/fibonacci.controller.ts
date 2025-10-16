@@ -1,13 +1,11 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { FibonacciWorkerHost } from './fibonacci-worker.host';
 
 @Controller('fibonacci')
 export class FibonacciController {
+  constructor(private readonly fibonacciWorkerHost: FibonacciWorkerHost) {}
   @Get()
-  fibonacci(@Query('n') n: number = 10): number {
-    if (n < 2) {
-      return n;
-    }
-
-    return this.fibonacci(n - 1) + this.fibonacci(n - 2);
+  fibonacci(@Query('n') n: number = 10) {
+    return this.fibonacciWorkerHost.run(n);
   }
 }

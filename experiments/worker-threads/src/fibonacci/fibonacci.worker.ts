@@ -8,7 +8,7 @@ export function fibonacci(n: number): number {
   return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-parentPort?.on('message', ({ n, id }: { n: number; id: number }) => {
+parentPort?.on('message', ({ n, id }: { n: number; id: string }) => {
   const result = fibonacci(n);
   parentPort?.postMessage({ id, result });
 });

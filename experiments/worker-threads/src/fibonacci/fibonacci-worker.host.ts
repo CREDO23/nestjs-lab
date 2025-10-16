@@ -3,6 +3,7 @@ import {
   OnApplicationBootstrap,
   OnApplicationShutdown,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { join } from 'path';
 import { filter, firstValueFrom, fromEvent, map, Observable } from 'rxjs';
 import { Worker } from 'worker_threads';
@@ -12,11 +13,11 @@ export class FibonacciWorkerHost
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private worker: Worker;
-  private message: Observable<{ id: number; result: number }>;
+  private message: Observable<{ id: string; result: number }>;
   onApplicationBootstrap() {
-    this.worker = new Worker(join(__dirname, 'fibonacci.worker.ts'));
+    this.worker = new Worker(join(__dirname, 'fibonacci.worker.js'));
     this.message = fromEvent(this.worker, 'message') as Observable<{
-      id: number;
+      id: string;
       result: number;
     }>;
   }
@@ -25,8 +26,8 @@ export class FibonacciWorkerHost
   }
 
   run(n: number) {
-    const uniqueId = Date.now();
-    this.worker.postMessage({ n, uniqueId });
+    const uniqueId = randomUUID();
+    this.worker.postMessage({ n, id: uniqueId });
     return firstValueFrom(
       this.message.pipe(
         filter(({ id }) => id === uniqueId),

@@ -18,7 +18,7 @@ echo "Scaffolding new Nest experiment at $TARGET_DIR..."
 # Uses Nest CLI to scaffold a new app and adjust package-manager if needed
 npx -y @nestjs/cli new "$TARGET_DIR" --skip-git --package-manager pnpm --skip-install
 
-# update package name to a consistent convention
+# Update package name to a consistent convention
 pkgfile="$TARGET_DIR/package.json"
 tmpfile="$TARGET_DIR/tmp.package.json"
 jq --arg n "experiment--$NAME" '.name = $n' "$pkgfile" > "$tmpfile" && mv "$tmpfile" "$pkgfile"

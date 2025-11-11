@@ -15,7 +15,7 @@ if [ -d "$TARGET_DIR" ]; then
 fi
 
 echo "Scaffolding new Nest experiment at $TARGET_DIR..."
-# uses Nest CLI to scaffold a new app; adjust package-manager if needed
+# Uses Nest CLI to scaffold a new app and adjust package-manager if needed
 npx -y @nestjs/cli new "$TARGET_DIR" --skip-git --package-manager pnpm --skip-install
 
 # update package name to a consistent convention

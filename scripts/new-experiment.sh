@@ -23,7 +23,7 @@ pkgfile="$TARGET_DIR/package.json"
 tmpfile="$TARGET_DIR/tmp.package.json"
 jq --arg n "experiment--$NAME" '.name = $n' "$pkgfile" > "$tmpfile" && mv "$tmpfile" "$pkgfile"
 
-# add README
+# Add README
 cat > "$TARGET_DIR/README.md" <<EOF
 # Experiment: $NAME
 EOF

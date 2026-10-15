@@ -14,8 +14,6 @@ A reusable module often needs options from the app that imports it, either as pl
 
 My first version had a single `path` option, the `env` extra, and a module constructor that logged the options it received. Then I switched to `port`, `host`, `dbHost` and `dbPort`, widened the option type from `string` to `string | number` so the ports could be numbers, removed the log, and added the `register()` and `registerAsync()` overrides.
 
-<!-- TODO(Thierry): the first version logged the injected options, which would have printed `{ path: './env' }`, without `env`. Did you notice? What did you expect `env` to do? -->
-
 ## What I learned
 
 - **An extra changes the module definition, not the options providers receive.** The transform spreads `env` onto the dynamic module, and `register()` strips it from the injected options. Nothing reads it from the definition, so in this code `env` has no effect. The module's spec checks both halves.

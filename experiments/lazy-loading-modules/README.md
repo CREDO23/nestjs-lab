@@ -14,8 +14,6 @@ Every module the root module imports is loaded and instantiated at startup, even
 
 I added `GET /reports`, which loads `ReportsModule` with `LazyModuleLoader`. At first the route also imported `ReportsService` dynamically. In a cleanup I switched the service to a static import and made `ReportsModule` log `ReportsModule loaded lazily` when Nest creates it.
 
-<!-- TODO(Thierry): was switching to the static import a deliberate trade-off, or just simpler code? -->
-
 ## What I learned
 
 - **Lazy loading defers the Nest module, not all of its code.** Since the switch to a static import, `reports.service.js` loads with the controller at startup; only `reports.module.js` waits for the first request. Loading the built controller is enough to see it:
@@ -28,8 +26,6 @@ I added `GET /reports`, which loads `ReportsModule` with `LazyModuleLoader`. At 
   The only file listed is `dist/reports/reports.service.js`.
 - **Until the first request, the module isn't part of the app.** `app.get(ReportsService)` throws before the first `GET /reports` and works after it.
 - **The module is created once.** Later requests call `load()` again but get the same module reference back, and `ReportsModule loaded lazily` appears only once in the log.
-
-<!-- TODO(Thierry): did you measure startup time with and without lazy loading? -->
 
 ## How to run
 

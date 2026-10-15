@@ -19,8 +19,6 @@ I wrote the state machine first: the failure handler, then the success handler, 
 
 Later, the e2e test [`test/circuit-breaker.e2e-spec.ts`](test/circuit-breaker.e2e-spec.ts) turned that check into a repeatable one with 5 requests.
 
-<!-- TODO(Thierry): what did you expect the loop to show before you ran it? -->
-
 ## What I learned
 
 - **To the client, an open circuit looks the same as a failure.** While the circuit is open, the breaker re-throws the error that opened it. In the screenshot, every request after the third got the same 400 `Couldn't getHello`, although the handler no longer ran.
@@ -28,8 +26,6 @@ Later, the e2e test [`test/circuit-breaker.e2e-spec.ts`](test/circuit-breaker.e2
 - **Only consecutive failures count.** Any success resets the failure count to zero.
 - **Half-open lets every request through.** There is no limit on trial requests: each one goes through until 3 succeed or 1 fails.
 - **Each route handler gets its own breaker.** The interceptor keys breakers by handler function, so a failing route does not open another route's circuit. The interceptor's unit test checks this.
-
-<!-- TODO(Thierry): should 4xx errors count as failures, or only failures of the dependency (5xx, timeouts)? -->
 
 ## How to run
 

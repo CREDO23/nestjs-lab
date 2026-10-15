@@ -17,8 +17,6 @@ Node runs JavaScript on one thread, so a CPU-heavy request blocks every other re
 
 I started with the computation inside the request handler, on the main thread. Then I moved it to a single worker started at bootstrap, and had to fix two things: the worker path changed from `fibonacci.worker.ts` to `fibonacci.worker.js`, and the message changed from `{ n, uniqueId }` with a `Date.now()` id to `{ n, id }` with a `randomUUID()`. Last, I replaced the single worker with a piscina pool and kept the single-worker version in comments.
 
-<!-- TODO(Thierry): what did you see when the worker pointed at the .ts file, and when the message used `uniqueId`? Did other requests stall with the first, in-handler version? -->
-
 ## What I learned
 
 - **While the pool computes, the main thread stays free.** The e2e test starts `fibonacci(40)` and, while it is still running in the pool, `GET /` answers. The same test fails when the computation runs on the main thread instead.
@@ -27,8 +25,6 @@ I started with the computation inside the request handler, on the main thread. T
 - **`module.exports = …` erases the named export.** The worker file assigns `module.exports` to the function piscina calls, which replaces the object that held `export function fibonacci`; importing `fibonacci` gives `undefined`. A test marked `it.failing` records this.
 - **Nothing closes the pool.** The pool is a plain field on the controller, so `app.close()` leaves its threads running; the e2e test calls `destroy()` itself, or jest never exits.
 - **The single worker still starts.** `FibonacciWorkerHost` is still registered in `FibonacciModule`, so the app starts a worker thread from `fibonacci.worker.js` at bootstrap, although the controller no longer uses it.
-
-<!-- TODO(Thierry): why was `Date.now()` replaced as the id: two requests in the same millisecond getting the same id? -->
 
 ## How to run
 

@@ -6,7 +6,7 @@ A reusable module often needs options from the app that imports it, either as pl
 
 ## Approach
 
-- [`src/env-variables-module/env-variables-module-definition.ts`](src/env-variables-module/env-variables-module-definition.ts): builds the module with `ConfigurableModuleBuilder` and exports the generated base class, the options token (`ENV_VARIABLES_MODULE_OPTIONS_TOKEN`) and the option types. It also declares an `env` extra (`'development' | 'production' | 'test'`, default `'development'`) with a transform that spreads the extras onto the module definition.
+- [`src/env-variables-module/env-variables-module-definition.ts`](src/env-variables-module/env-variables-module-definition.ts): builds the module with `ConfigurableModuleBuilder` and exports the generated base class, the options token (`ENV_VARIABLES_MODULE_OPTIONS_TOKEN`) and the option types. It also declares an `env` extra (`'development' | 'production' | 'test'`, default `'development'`) with a transform that adds `env` as its own exported provider, under `ENV_VARIABLES_MODULE_ENV_TOKEN`.
 - [`src/env-variables-module/env-variables.module.ts`](src/env-variables-module/env-variables.module.ts): `EnvVariablesModule` extends the generated class and overrides `register()` and `registerAsync()`, with a `// custom logic` placeholder before calling `super`.
 - [`src/app.module.ts`](src/app.module.ts): imports the module with `register()` and static values. A `registerAsync()` version is left in a comment.
 
@@ -16,8 +16,8 @@ My first version had a single `path` option, the `env` extra, and a module const
 
 ## What I learned
 
-- **An extra changes the module definition, not the options providers receive.** The transform spreads `env` onto the dynamic module, and `register()` strips it from the injected options. Nothing reads it from the definition, so in this code `env` has no effect. The module's spec checks both halves.
-- **With `registerAsync()`, the same key passes through as a plain option.** A factory that returns `env: 'test'` gets it injected, while the module definition keeps the default `'development'`.
+- **`env` is not in the options object.** Injecting `ENV_VARIABLES_MODULE_OPTIONS_TOKEN` gives `{ port, host, dbHost, dbPort }`, without `env`: `register()` removes everything declared with `setExtras`. So the module provides `env` separately, under `ENV_VARIABLES_MODULE_ENV_TOKEN`.
+- **With `registerAsync()`, `env` has to be passed next to `useFactory`.** `registerAsync({ useFactory, env: 'test' })` sets `env` to `'test'`. If the factory returns `env: 'test'` instead, it just ends up in the options object, and `env` stays `'development'`.
 - **`register()` and `registerAsync()` come for free and share one token.** Both provide the options under `ENV_VARIABLES_MODULE_OPTIONS_TOKEN`.
 - **The index-signature type accepts any key.** `{ [index: string]: string | number }` lets any option name through, misspelled ones included.
 

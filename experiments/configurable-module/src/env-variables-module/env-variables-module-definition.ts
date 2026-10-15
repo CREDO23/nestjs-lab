@@ -1,5 +1,7 @@
 import { ConfigurableModuleBuilder } from '@nestjs/common';
 
+export const ENV_VARIABLES_MODULE_ENV_TOKEN = 'ENV_VARIABLES_MODULE_ENV';
+
 export const {
   ConfigurableModuleClass,
   MODULE_OPTIONS_TOKEN: ENV_VARIABLES_MODULE_OPTIONS_TOKEN,
@@ -14,10 +16,18 @@ export const {
     {
       env: 'development',
     },
-    (definition, extracts) => {
+    // Extras never reach the injected options, so `env` gets its own provider.
+    (definition, extras) => {
       return {
         ...definition,
-        ...extracts,
+        providers: [
+          ...(definition.providers ?? []),
+          { provide: ENV_VARIABLES_MODULE_ENV_TOKEN, useValue: extras.env },
+        ],
+        exports: [
+          ...(definition.exports ?? []),
+          ENV_VARIABLES_MODULE_ENV_TOKEN,
+        ],
       };
     },
   )

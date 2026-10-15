@@ -8,22 +8,27 @@ Node runs JavaScript on one thread, so a CPU-heavy request blocks every other re
 
 `GET /fibonacci?n=<n>` computes a Fibonacci number with the naive recursive algorithm, which takes exponential time, so a large `n` keeps a thread busy. The code keeps two ways of running it in a worker:
 
-- One static worker (`src/fibonacci/fibonacci-worker.host.ts`): a single worker started at application bootstrap and terminated at shutdown. Each request posts `{ n, id }` with a random UUID, and the host waits for the reply with the same `id`. The controller and worker code for this version are kept in comments at the bottom of `fibonacci.controller.ts` and `fibonacci.worker.ts`.
-- A piscina pool (`src/fibonacci/fibonacci.controller.ts`, the active version): a `Piscina` pool runs `fibonacci.worker.js`. The comment in the controller gives the reason: several workers can run in parallel, so a second request goes to another worker if the first is busy.
+- One static worker ([`src/fibonacci/fibonacci-worker.host.ts`](src/fibonacci/fibonacci-worker.host.ts)): a single worker started at application bootstrap and terminated at shutdown. Each request posts `{ n, id }` with a random UUID, and the host waits for the reply with the same `id`. The controller and worker code for this version are kept in comments at the bottom of `fibonacci.controller.ts` and `fibonacci.worker.ts`.
+- A piscina pool ([`src/fibonacci/fibonacci.controller.ts`](src/fibonacci/fibonacci.controller.ts), the active version): a `Piscina` pool runs `fibonacci.worker.js`. The comment in the controller gives the reason: several workers can run in parallel, so a second request goes to another worker if the first is busy.
 
-`src/fibonacci/fibonacci.worker.ts` exports the function piscina calls, with `module.exports = (n) => fibonacci(n)`.
+[`src/fibonacci/fibonacci.worker.ts`](src/fibonacci/fibonacci.worker.ts) exports the function piscina calls, with `module.exports = (n) => fibonacci(n)`.
 
-## What I took away
+## How it went
 
-- The computation moved in three steps: first in the request handler itself, then in one static worker, then in a piscina pool.
-- A worker thread loads its file with Node directly, so it needs the compiled `.js` file. The first static worker pointed at `fibonacci.worker.ts` and had to be changed to `.js`. For the same reason the e2e test runs against the compiled app in `dist/`: under jest there is no `fibonacci.worker.js` next to the controller.
-- With one worker, all requests share one message channel, so each message carries an id to match the reply. The first version sent `{ n, uniqueId }` while the worker read `id`, and used `Date.now()` as the id; it was changed to `{ n, id }` with `randomUUID()`.
-- `module.exports = ...` in the worker file replaces the named `export function fibonacci`, so importing `fibonacci` from that file gives `undefined`. A test marked `it.failing` records this.
-- `app.close()` does not stop the piscina pool, because the pool is a plain field on the controller. The e2e test calls `destroy()` on it; without that, jest never exits.
-- `FibonacciWorkerHost` is still registered in `FibonacciModule`, so the app still starts a worker thread from `fibonacci.worker.js` at bootstrap, although the controller no longer uses it.
+I started with the computation inside the request handler, on the main thread. Then I moved it to a single worker started at bootstrap, and had to fix two things: the worker path changed from `fibonacci.worker.ts` to `fibonacci.worker.js`, and the message changed from `{ n, uniqueId }` with a `Date.now()` id to `{ n, id }` with a `randomUUID()`. Last, I replaced the single worker with a piscina pool and kept the single-worker version in comments.
 
-<!-- TODO(Thierry): did you compare response times, or check that other routes stayed responsive while a large n was computed? -->
-<!-- TODO(Thierry): why was Date.now() replaced as the message id: two requests in the same millisecond getting the same id? -->
+<!-- TODO(Thierry): what did you see when the worker pointed at the .ts file, and when the message used `uniqueId`? Did other requests stall with the first, in-handler version? -->
+
+## What I learned
+
+- **While the pool computes, the main thread stays free.** The e2e test starts `fibonacci(40)` and, while it is still running in the pool, `GET /` answers. The same test fails when the computation runs on the main thread instead.
+- **A worker thread runs compiled JavaScript.** Node loads the worker file directly, without the TypeScript build, hence the switch from `.ts` to `.js`. Under jest there is no `fibonacci.worker.js` next to the controller, so the e2e test runs against the compiled app in `dist/`.
+- **With one worker, each message needs an id.** All requests share one message channel, so the host tags each message and waits for the reply with the same tag. The first version sent the tag as `uniqueId` while the worker read `id`.
+- **`module.exports = …` erases the named export.** The worker file assigns `module.exports` to the function piscina calls, which replaces the object that held `export function fibonacci`; importing `fibonacci` gives `undefined`. A test marked `it.failing` records this.
+- **Nothing closes the pool.** The pool is a plain field on the controller, so `app.close()` leaves its threads running; the e2e test calls `destroy()` itself, or jest never exits.
+- **The single worker still starts.** `FibonacciWorkerHost` is still registered in `FibonacciModule`, so the app starts a worker thread from `fibonacci.worker.js` at bootstrap, although the controller no longer uses it.
+
+<!-- TODO(Thierry): why was `Date.now()` replaced as the id: two requests in the same millisecond getting the same id? -->
 
 ## How to run
 

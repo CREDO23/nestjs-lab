@@ -25,6 +25,7 @@ export class FibonacciController implements OnModuleDestroy {
 
 /**
  * Bellow is for static worker
+ * (to use it, also add FibonacciWorkerHost to FibonacciModule's providers)
  */
 // import { FibonacciWorkerHost } from './fibonacci-worker.host';
 

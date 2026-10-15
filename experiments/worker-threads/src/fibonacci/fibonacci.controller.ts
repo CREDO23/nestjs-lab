@@ -11,6 +11,7 @@ import Picsina from 'piscina';
 export class FibonacciController implements OnModuleDestroy {
   fibonacciWorker = new Picsina({
     filename: join(__dirname, 'fibonacci.worker.js'),
+    name: 'fibonacci', // the exported function piscina calls
   });
   @Get()
   fibonacci(@Query('n') n: number = 10) {

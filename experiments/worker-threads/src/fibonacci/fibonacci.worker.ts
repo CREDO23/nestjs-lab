@@ -6,10 +6,6 @@ export function fibonacci(n: number): number {
   return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-module.exports = (n: number) => {
-  return fibonacci(n);
-};
-
 /**
  * Bellow is for static worker
  */

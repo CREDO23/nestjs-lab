@@ -4,7 +4,7 @@ import {
   ENV_VARIABLES_MODULE_ASYNC_OPTIONS_TYPE,
   ENV_VARIABLES_MODULE_OPTIONS_TYPE,
   ENV_VARIABLES_MODULE_OPTIONS_TOKEN,
-} from './env-varaibles-module-definition';
+} from './env-variables-module-definition';
 
 @Module({})
 export class EnvVariablesModule extends ConfigurableModuleClass {

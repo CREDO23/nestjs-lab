@@ -1,22 +1,17 @@
 # Lazy-loading modules
 
-## Problem
+## The idea
 
-Every module the root module imports is loaded and instantiated at startup, even one that is rarely used. Lazy loading defers a module until the first request that needs it.
+Nest normally loads and creates every module when the app starts. With lazy loading, a module is loaded only the first time it's needed, so the app doesn't pay for it until then.
 
-## Approach
+## What I built
 
-- [`src/app.controller.ts`](src/app.controller.ts): `GET /reports` calls `LazyModuleLoader.load()` with a dynamic `import('./reports/reports.module')`, then gets `ReportsService` from the returned module reference.
-- [`src/reports/reports.module.ts`](src/reports/reports.module.ts): `ReportsModule` is not imported by `AppModule`. Its constructor logs `ReportsModule loaded lazily`.
-- [`src/reports/reports.service.ts`](src/reports/reports.service.ts): the service the route calls.
-
-## How it went
-
-I added `GET /reports`, which loads `ReportsModule` with `LazyModuleLoader`. At first the route also imported `ReportsService` dynamically. In a cleanup I switched the service to a static import and made `ReportsModule` log `ReportsModule loaded lazily` when Nest creates it.
+- [`src/reports/reports.module.ts`](src/reports/reports.module.ts): `ReportsModule`, which `AppModule` doesn't import. Its constructor logs `ReportsModule loaded lazily`, which shows when Nest creates it.
+- [`src/app.controller.ts`](src/app.controller.ts): `GET /reports` loads `ReportsModule` with `LazyModuleLoader`, gets `ReportsService` from it, and returns the service's result.
 
 ## What I learned
 
-- **Lazy loading defers the Nest module, not all of its code.** Since the switch to a static import, `reports.service.js` loads with the controller at startup; only `reports.module.js` waits for the first request. Loading the built controller is enough to see it:
+- Lazy loading delayed creating `ReportsModule`, but not loading the service's code. The controller has a normal `import { ReportsService }` at the top, because it needs the class to find the service, so `reports.service.ts` is loaded at startup anyway; only `reports.module.ts` waits for the first request. An earlier version imported the service with `await import(…)` as well. Loading the built controller shows it:
 
   ```sh
   cd experiments/lazy-loading-modules && pnpm build
@@ -24,8 +19,10 @@ I added `GET /reports`, which loads `ReportsModule` with `LazyModuleLoader`. At 
   ```
 
   The only file listed is `dist/reports/reports.service.js`.
-- **Until the first request, the module isn't part of the app.** `app.get(ReportsService)` throws before the first `GET /reports` and works after it.
-- **The module is created once.** Later requests call `load()` again but get the same module reference back, and `ReportsModule loaded lazily` appears only once in the log.
+- Before the first `GET /reports`, the module isn't part of the app: asking Nest for `ReportsService` fails until then.
+- The module is created only once. Every `GET /reports` calls `load()`, but only the first call creates the module; later calls get the same one back, and the log line appears once.
+
+The tests ([`src/app.controller.spec.ts`](src/app.controller.spec.ts)) check the last two.
 
 ## How to run
 

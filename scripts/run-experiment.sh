@@ -6,4 +6,4 @@ if [ -z "$NAME" ]; then
   echo "Example: ./scripts/run-experiment.sh circuit-breaker-pattern"
   exit 1
 fi
-pnpm --filter "experiment-$NAME" start:dev
+pnpm --filter "experiment--$NAME" start:dev

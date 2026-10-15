@@ -4,7 +4,7 @@ Experiments I ran while learning NestJS. I started by building one app, [taskibl
 
 ## How it's organised
 
-- `experiments/<name>/`: one NestJS app per experiment, each a pnpm workspace package named `experiment--<name>`, with its own README and tests.
+- `experiments/<name>/`: one NestJS app per experiment, each a pnpm workspace package named `experiment--<name>`. Its README covers the problem, how the code works, how it went and what I learned; its tests check the pattern.
 - `shared/`: the `@experiments/shared` package, with an `HttpExceptionFilter` and a request-logging module. `pnpm install` builds it. circuit-breaker-pattern uses its exception filter.
 - `scripts/`: the scripts behind `pnpm start:exp` and `pnpm new:exp`.
 
@@ -16,6 +16,13 @@ Experiments I ran while learning NestJS. I started by building one app, [taskibl
 | [configurable-module](experiments/configurable-module) | A dynamic module built with `ConfigurableModuleBuilder`: `register()`, `registerAsync()` and an extra option. |
 | [lazy-loading-modules](experiments/lazy-loading-modules) | Loading a module on the first request with `LazyModuleLoader` instead of at startup. |
 | [worker-threads](experiments/worker-threads) | Moving CPU-heavy work off the main thread, with one worker and with a piscina pool. |
+
+## What I learned
+
+- **To the client, an open circuit looks the same as a failure.** ([circuit-breaker-pattern](experiments/circuit-breaker-pattern/README.md#what-i-learned))
+- **A `ConfigurableModuleBuilder` extra changes the module definition, not the options providers receive.** ([configurable-module](experiments/configurable-module/README.md#what-i-learned))
+- **Lazy loading defers the Nest module, not all of its code.** ([lazy-loading-modules](experiments/lazy-loading-modules/README.md#what-i-learned))
+- **A worker pool keeps the main thread free, but workers run compiled JavaScript, and `app.close()` doesn't stop the pool.** ([worker-threads](experiments/worker-threads/README.md#what-i-learned))
 
 ## How to run
 

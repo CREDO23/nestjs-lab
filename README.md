@@ -2,11 +2,15 @@
 
 Experiments I ran while learning NestJS. I started by building one app, [taskible-api](https://github.com/CREDO23/taskible-api), found that one app couldn't hold everything I wanted to try, and switched to separate experiments. Each one takes one concept, builds the smallest thing that shows it, and records what I found: trade-offs, what broke, what worked.
 
-## How it's organised
+## Contents
 
-- `experiments/<name>/`: one NestJS app per experiment, each a pnpm workspace package named `experiment--<name>`. Its README covers the idea, what I built, what I learned and how to run it; its tests check the pattern.
-- `shared/`: the `@experiments/shared` package, with an `HttpExceptionFilter` and a request-logging module. `pnpm install` builds it. circuit-breaker-pattern uses its exception filter.
-- `scripts/`: the scripts behind `pnpm start:exp` and `pnpm new:exp`.
+- [Experiments](#experiments)
+  - [Circuit breaker](#circuit-breaker)
+  - [Configurable module](#configurable-module)
+  - [Lazy-loading modules](#lazy-loading-modules)
+  - [Worker threads](#worker-threads)
+- [Getting started](#getting-started)
+- [Repository layout](#repository-layout)
 
 ## Experiments
 
@@ -59,7 +63,7 @@ Each experiment's README has the details: the files, how each point was checked,
 - With one worker, several requests can be waiting for an answer at the same time, so each request sends an id with its number and waits for the answer with the same id. Otherwise a request can get another request's answer.
 - A worker is started from a file path, and Node loads that file itself, outside the TypeScript build. So the path has to name the compiled `fibonacci.worker.js`; my first version used `fibonacci.worker.ts`, which crashes the app right after it starts.
 
-## How to run
+## Getting started
 
 Requires Node 22 and pnpm 10.
 
@@ -70,4 +74,18 @@ pnpm -r test            # runs every experiment's tests
 pnpm new:exp <name>     # scaffolds a new experiment with the Nest CLI (needs jq)
 ```
 
-Each experiment's README lists the endpoint to call and what to expect.
+`<name>` is a folder under `experiments/`, for example `pnpm start:exp circuit-breaker-pattern`. Each experiment's README lists the endpoint to call and what to expect.
+
+## Repository layout
+
+```text
+experiments/                one NestJS app per experiment
+  circuit-breaker-pattern/
+  configurable-module/
+  lazy-loading-modules/
+  worker-threads/
+shared/                     @experiments/shared: an HttpExceptionFilter and a request-logging module
+scripts/                    the scripts behind pnpm start:exp and pnpm new:exp
+```
+
+Each experiment is its own pnpm workspace package, named `experiment--<name>`, built with NestJS 11 and TypeScript and tested with Jest. `pnpm install` builds `shared/`; circuit-breaker-pattern uses its exception filter.

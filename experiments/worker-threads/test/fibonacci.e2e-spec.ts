@@ -32,8 +32,6 @@ describe('GET /fibonacci (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
-    // app.close() does not stop the pool's threads, and they keep jest running.
-    await app.get(FibonacciController).fibonacciWorker.destroy();
   });
 
   it('returns 55 for n=10, computed by the piscina pool', async () => {
@@ -74,5 +72,21 @@ describe('GET /fibonacci (e2e)', () => {
 
     expect(fibonacciDone).toBe(false);
     await slowRequest;
+  });
+});
+
+describe('app.close() (e2e)', () => {
+  it('stops the piscina pool', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    const app = moduleFixture.createNestApplication();
+    await app.init();
+    const pool = app.get(FibonacciController).fibonacciWorker;
+    expect(pool.threads.length).toBeGreaterThan(0);
+
+    await app.close();
+
+    expect(pool.threads).toHaveLength(0);
   });
 });

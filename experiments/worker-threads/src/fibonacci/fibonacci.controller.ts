@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, OnModuleDestroy, Query } from '@nestjs/common';
 import { join } from 'path';
 import Picsina from 'piscina';
 
@@ -8,18 +8,25 @@ import Picsina from 'piscina';
  */
 
 @Controller('fibonacci')
-export class FibonacciController {
+export class FibonacciController implements OnModuleDestroy {
   fibonacciWorker = new Picsina({
     filename: join(__dirname, 'fibonacci.worker.js'),
+    name: 'fibonacci', // the exported function piscina calls
   });
   @Get()
   fibonacci(@Query('n') n: number = 10) {
     return this.fibonacciWorker.run(n);
   }
+
+  // The pool's threads keep the process alive until it is destroyed.
+  async onModuleDestroy() {
+    await this.fibonacciWorker.destroy();
+  }
 }
 
 /**
  * Bellow is for static worker
+ * (to use it, also add FibonacciWorkerHost to FibonacciModule's providers)
  */
 // import { FibonacciWorkerHost } from './fibonacci-worker.host';
 

@@ -1,27 +1,22 @@
 # Worker threads
 
-## Problem
+## The idea
 
-Node runs JavaScript on one thread, so a CPU-heavy request blocks every other request until it finishes. Worker threads move that work off the main thread.
+Node runs JavaScript on one thread, so a CPU-heavy request makes every other request wait. Worker threads run code on separate threads. A pool like piscina keeps several ready and hands each task to a free one.
 
-## Approach
+## What I built
 
-`GET /fibonacci?n=<n>` computes a Fibonacci number with the naive recursive algorithm, which takes exponential time, so a large `n` keeps a thread busy. The code keeps two ways of running it in a worker:
+`GET /fibonacci?n=…` computes Fibonacci numbers recursively, as a CPU-heavy task. I ran the computation three ways:
 
-- One static worker ([`src/fibonacci/fibonacci-worker.host.ts`](src/fibonacci/fibonacci-worker.host.ts)): a single worker started at application bootstrap and terminated at shutdown. Each request posts `{ n, id }` with a random UUID, and the host waits for the reply with the same `id`. The class is still in the code but not in `FibonacciModule`'s providers, so it doesn't run; the controller and worker code for this version are in comments at the bottom of `fibonacci.controller.ts` and `fibonacci.worker.ts`.
-- A piscina pool ([`src/fibonacci/fibonacci.controller.ts`](src/fibonacci/fibonacci.controller.ts), the active version): a `Piscina` pool runs `fibonacci.worker.js`. The comment in the controller gives the reason: several workers can run in parallel, so a second request goes to another worker if the first is busy.
-
-[`src/fibonacci/fibonacci.worker.ts`](src/fibonacci/fibonacci.worker.ts) exports `fibonacci()`. The pool is created with `name: 'fibonacci'`, which tells piscina which exported function to run.
-
-## How it went
-
-I started with the computation inside the request handler, on the main thread. Then I moved it to a single worker started at bootstrap, and had to fix two things: the worker path changed from `fibonacci.worker.ts` to `fibonacci.worker.js`, and the message changed from `{ n, uniqueId }` with a `Date.now()` id to `{ n, id }` with a `randomUUID()`. Last, I replaced the single worker with a piscina pool and kept the single-worker version in comments.
+1. In the request handler, on the main thread.
+2. In one worker thread started with the app ([`src/fibonacci/fibonacci-worker.host.ts`](src/fibonacci/fibonacci-worker.host.ts)). Each request sends its number with an id and waits for the answer with the same id. This version is still in the code but not used.
+3. In a piscina pool ([`src/fibonacci/fibonacci.controller.ts`](src/fibonacci/fibonacci.controller.ts)), the version in use. The pool runs `fibonacci()` from [`src/fibonacci/fibonacci.worker.ts`](src/fibonacci/fibonacci.worker.ts).
 
 ## What I learned
 
-- **While the pool computes, the main thread stays free.** The e2e test starts `fibonacci(40)` and, while it is still running in the pool, `GET /` answers. The same test fails when the computation runs on the main thread instead.
-- **A worker thread runs compiled JavaScript.** Node loads the worker file directly, without the TypeScript build, hence the switch from `.ts` to `.js`. Under jest there is no `fibonacci.worker.js` next to the controller, so the e2e test runs against the compiled app in `dist/`.
-- **With one worker, each message needs an id.** All requests share one message channel, so the host tags each message and waits for the reply with the same tag. The first version sent the tag as `uniqueId` while the worker read `id`.
+- In the request handler, the computation makes `GET /` wait until it finishes. In the pool, `GET /` still answered while `fibonacci(40)` was running. The e2e test ([`test/fibonacci.e2e-spec.ts`](test/fibonacci.e2e-spec.ts)) checks it, and fails when the computation runs on the main thread.
+- With one worker, several requests can be waiting for an answer at the same time, so each request sends an id with its number and waits for the answer with the same id. Otherwise a request can get another request's answer. My first version sent the id as `uniqueId` while the worker read `id`, and used `Date.now()`, which two requests in the same millisecond share; it now uses `randomUUID()`.
+- A worker is started from a file path, and Node loads that file itself, outside the TypeScript build. So the path has to name the compiled `fibonacci.worker.js`; my first version used `fibonacci.worker.ts`, which crashes the app right after it starts. For the same reason, the e2e test runs against the compiled app in `dist/`.
 
 ## How to run
 

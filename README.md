@@ -4,47 +4,60 @@ Experiments I ran while learning NestJS. I started by building one app, [taskibl
 
 ## How it's organised
 
-- `experiments/<name>/`: one NestJS app per experiment, each a pnpm workspace package named `experiment--<name>`. Its README covers the problem, how the code works, how it went and what I learned; its tests check the pattern.
+- `experiments/<name>/`: one NestJS app per experiment, each a pnpm workspace package named `experiment--<name>`. Its README covers the idea, what I built, what I learned and how to run it; its tests check the pattern.
 - `shared/`: the `@experiments/shared` package, with an `HttpExceptionFilter` and a request-logging module. `pnpm install` builds it. circuit-breaker-pattern uses its exception filter.
 - `scripts/`: the scripts behind `pnpm start:exp` and `pnpm new:exp`.
 
 ## Experiments
 
-Each experiment's README has the rest: how the code works, how it went, and the evidence behind each point.
+Each experiment's README has the details: the files, how each point was checked, and how to run it.
 
 ### [Circuit breaker](experiments/circuit-breaker-pattern)
 
-An interceptor that stops calling a failing route handler after 3 failures and tries again after 60 s.
+**The idea.** When a route depends on something that keeps failing, like a database or another service, calling it on every request wastes time and adds load to something already broken. A circuit breaker counts failures. After too many in a row it "opens" and, for a while, rejects calls without running them. Then it lets calls through again to check whether things have recovered, and "closes" once they succeed.
+
+**What I built.** A `CircuitBreaker` class and a Nest interceptor that gives each route its own breaker. It opens after 3 failures in a row, stays open for 60 s, and closes again after 3 successful calls. To test it, the route `GET /` always throws a 400 error.
 
 **What I learned**
 
-- When the circuit was open, the breaker skipped the handler but returned the last error the handler had thrown, so a client couldn't tell a skipped request from a real failure.
-- A bad request counts as a failure too: three 400 responses were enough to open the circuit.
+- While the circuit was open, the route's code no longer ran, but clients still got the same `400 Couldn't getHello` as before. Nothing in the response said the circuit was open.
+- The breaker counts every error, including 400s: three bad requests were enough to open the circuit.
 
 ### [Configurable module](experiments/configurable-module)
 
-A reusable module built with `ConfigurableModuleBuilder`, which generates `register()` and `registerAsync()` for passing it options.
+**The idea.** A reusable Nest module often needs settings from the app that imports it. `ConfigurableModuleBuilder` generates `register()` and `registerAsync()` for passing them, and it has two kinds of settings:
+
+- **options**, which the module's services receive as one options object;
+- **extras**, declared with `setExtras`, which are meant to change how the module itself is set up.
+
+**What I built.** `EnvVariablesModule`, with a port, a host and database settings as options. I added `env` (`development`, `production` or `test`) as an extra, so the same module can be configured for each environment.
 
 **What I learned**
 
-- The `env` value I declared with `setExtras` was never in the options my module received: `register()` removes it, so `env` needs its own provider.
+- An extra never reaches the options object: `register({ port: 5000, env: 'production' })` gives the services `{ port: 5000 }`. Nest passes `env` only to the function given to `setExtras`, so that function has to pass it on; here it registers `env` as its own provider.
 
 ### [Lazy-loading modules](experiments/lazy-loading-modules)
 
-`ReportsModule` is loaded with `LazyModuleLoader` on the first `GET /reports` instead of at startup.
+**The idea.** Nest normally loads and creates every module when the app starts. With lazy loading, a module is loaded only the first time it's needed, so the app doesn't pay for it until then.
+
+**What I built.** A `ReportsModule` that `AppModule` doesn't import. The first `GET /reports` loads it with `LazyModuleLoader`, gets `ReportsService` from it, and returns the service's result. The module logs a line when Nest creates it, which shows when it loads.
 
 **What I learned**
 
-- Lazy-loading the module didn't keep `reports.service.ts` out of startup: the controller imports the service class to look it up, so only the module file waited for the first request.
+- Lazy loading delayed creating `ReportsModule`, but not loading the service's code. The controller has a normal `import { ReportsService }` at the top, because it needs the class to find the service, so `reports.service.ts` is loaded at startup anyway. Only `reports.module.ts` waits for the first request.
+- The module is created only once. Every `GET /reports` calls `load()`, but only the first call creates the module; later calls get the same one back.
 
 ### [Worker threads](experiments/worker-threads)
 
-A CPU-heavy Fibonacci computation moved off the main thread, first to one worker, then to a piscina pool.
+**The idea.** Node runs JavaScript on one thread, so a CPU-heavy request makes every other request wait. Worker threads run code on separate threads. A pool like piscina keeps several ready and hands each task to a free one.
+
+**What I built.** A `GET /fibonacci?n=…` endpoint that computes Fibonacci numbers recursively, as a CPU-heavy task. I ran the computation three ways: in the request handler, in one worker thread started with the app, and in a piscina pool.
 
 **What I learned**
 
-- With the computation in a piscina pool, the server still answered `GET /` while `fibonacci(40)` was running.
-- A worker thread loads its file with plain Node, so it has to point at the compiled `.js` file, not the `.ts` source.
+- In the request handler, the computation makes `GET /` wait until it finishes. In the pool, `GET /` still answered while `fibonacci(40)` was running.
+- With one worker, several requests can be waiting for an answer at the same time, so each request sends an id with its number and waits for the answer with the same id. Otherwise a request can get another request's answer.
+- A worker is started from a file path, and Node loads that file itself, outside the TypeScript build. So the path has to name the compiled `fibonacci.worker.js`; my first version used `fibonacci.worker.ts`, which crashes the app right after it starts.
 
 ## How to run
 

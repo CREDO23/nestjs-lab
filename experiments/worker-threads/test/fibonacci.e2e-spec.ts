@@ -47,4 +47,32 @@ describe('GET /fibonacci (e2e)', () => {
 
     expect(pool.completed).toBe(completedBefore + 1);
   });
+
+  it('answers GET / while fibonacci(40) is still running in the pool', async () => {
+    const pool = app.get(FibonacciController).fibonacciWorker;
+    const run = pool.run.bind(pool) as typeof pool.run;
+    let handedToPool: () => void = () => undefined;
+    const taskHandedToPool = new Promise<void>((resolve) => {
+      handedToPool = resolve;
+    });
+    jest.spyOn(pool, 'run').mockImplementation((task, options) => {
+      handedToPool();
+      return run(task, options) as Promise<unknown>;
+    });
+
+    let fibonacciDone = false;
+    const slowRequest = request(app.getHttpServer())
+      .get('/fibonacci?n=40')
+      .expect(200)
+      .expect('102334155')
+      .then(() => {
+        fibonacciDone = true;
+      });
+    await taskHandedToPool;
+
+    await request(app.getHttpServer()).get('/').expect(200, 'Hello World!');
+
+    expect(fibonacciDone).toBe(false);
+    await slowRequest;
+  });
 });

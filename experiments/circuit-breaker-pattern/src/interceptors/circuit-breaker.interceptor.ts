@@ -5,7 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { CircuitBreaker } from './circuit-breaker.';
+import { CircuitBreaker } from './circuit-breaker';
 
 @Injectable()
 export class CircuitBreakerInterceptor implements NestInterceptor {

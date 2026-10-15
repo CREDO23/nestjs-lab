@@ -27,7 +27,7 @@ A reusable module built with `ConfigurableModuleBuilder`, which generates `regis
 
 **What I learned**
 
-- The `env` option I declared with `setExtras` never reached the options the module injects: `register()` strips it, and it only lands on the module definition, where nothing reads it.
+- The `env` value I declared with `setExtras` was never in the options my module received: `register()` removes it, so `env` needs its own provider.
 
 ### [Lazy-loading modules](experiments/lazy-loading-modules)
 
